@@ -45,8 +45,8 @@ class Smart_VPN_Warning {
      */
     public function add_settings_page() {
         add_options_page(
-            __('VPN Warning Settings', 'smart-vpn-warning-for-woocommerce'),
-            __('VPN Warning', 'smart-vpn-warning-for-woocommerce'),
+            esc_html__('تنظیمات هشدار VPN', 'smart-vpn-warning-for-woocommerce'),
+            esc_html__('هشدار VPN', 'smart-vpn-warning-for-woocommerce'),
             'manage_options',
             'smart-vpn-warning',
             array($this, 'render_settings_page')
@@ -58,82 +58,17 @@ class Smart_VPN_Warning {
      */
     public function register_settings() {
         register_setting(
-            'smart_vpn_warning_options_group', 
             'smart_vpn_warning_options',
-            array(
-                'sanitize_callback' => array($this, 'sanitize_options')
-            )
+            'smart_vpn_warning_options',
+            array($this, 'sanitize_options')
         );
-        
-        // Add nonce field
-        add_action('admin_init', function() {
-            wp_nonce_field('smart_vpn_warning_nonce', 'smart_vpn_warning_nonce');
-        });
-        
+
         add_settings_section(
-            'smart_vpn_warning_main_section',
-            __('تنظیمات هشدار VPN', 'smart-vpn-warning-for-woocommerce'),
-            array($this, 'settings_section_callback'),
-            'smart-vpn-warning'
+            'smart_vpn_warning_main',
+            esc_html__('تنظیمات اصلی', 'smart-vpn-warning-for-woocommerce'),
+            null,
+            'smart_vpn_warning_options'
         );
-        
-        add_settings_field(
-            'api_key',
-            __('کلید API', 'smart-vpn-warning-for-woocommerce'),
-            array($this, 'api_key_callback'),
-            'smart-vpn-warning',
-            'smart_vpn_warning_main_section'
-        );
-        
-        add_settings_field(
-            'warning_message_fa',
-            __('پیام هشدار', 'smart-vpn-warning-for-woocommerce'),
-            array($this, 'warning_message_fa_callback'),
-            'smart-vpn-warning',
-            'smart_vpn_warning_main_section'
-        );
-        
-        add_settings_field(
-            'show_to_all',
-            __('نمایش به همه کاربران', 'smart-vpn-warning-for-woocommerce'),
-            array($this, 'show_to_all_callback'),
-            'smart-vpn-warning',
-            'smart_vpn_warning_main_section'
-        );
-    }
-
-    /**
-     * Settings section description
-     */
-    public function settings_section_callback() {
-        echo '<p>' . esc_html__('Configure the Smart VPN Warning plugin settings here.', 'smart-vpn-warning-for-woocommerce') . '</p>';
-    }
-
-    /**
-     * API key field
-     */
-    public function api_key_callback() {
-        $api_key = isset($this->options['api_key']) ? $this->options['api_key'] : '';
-        echo '<input type="text" id="api_key" name="smart_vpn_warning_options[api_key]" value="' . esc_attr($api_key) . '" class="regular-text" />';
-        echo '<p class="description">' . wp_kses(__('Get your API key from <a href="https://ipgeolocation.io/" target="_blank">ipgeolocation.io</a>.', 'smart-vpn-warning-for-woocommerce'), array('a' => array('href' => array(), 'target' => array()))) . '</p>';
-    }
-
-    /**
-     * Warning message field (Persian)
-     */
-    public function warning_message_fa_callback() {
-        $warning_message_fa = isset($this->options['warning_message_fa']) ? $this->options['warning_message_fa'] : 'لطفاً برای انجام موفق پرداخت، VPN یا فیلترشکن خود را خاموش کنید.';
-        echo '<textarea id="warning_message_fa" name="smart_vpn_warning_options[warning_message_fa]" rows="4" cols="50">' . esc_textarea($warning_message_fa) . '</textarea>';
-        echo '<p class="description">' . esc_html__('This message will be displayed to users with Persian language settings.', 'smart-vpn-warning-for-woocommerce') . '</p>';
-    }
-
-    /**
-     * Show to all users field
-     */
-    public function show_to_all_callback() {
-        $show_to_all = isset($this->options['show_to_all']) ? $this->options['show_to_all'] : 'no';
-        echo '<input type="checkbox" id="show_to_all" name="smart_vpn_warning_options[show_to_all]" value="yes" ' . checked('yes', $show_to_all, false) . ' />';
-        echo '<label for="show_to_all">' . esc_html__('Show warning to all users (without checking country)', 'smart-vpn-warning-for-woocommerce') . '</label>';
     }
 
     /**
@@ -142,13 +77,58 @@ class Smart_VPN_Warning {
     public function render_settings_page() {
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+            <h1><?php echo esc_html__('تنظیمات هشدار VPN', 'smart-vpn-warning-for-woocommerce'); ?></h1>
             <form method="post" action="options.php">
                 <?php
-                settings_fields('smart_vpn_warning_options_group');
-                do_settings_sections('smart-vpn-warning');
-                submit_button();
+                settings_fields('smart_vpn_warning_options');
+                do_settings_sections('smart_vpn_warning_options');
                 ?>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="smart_vpn_warning_api_key"><?php echo esc_html__('کلید API', 'smart-vpn-warning-for-woocommerce'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" id="smart_vpn_warning_api_key" name="smart_vpn_warning_options[api_key]" value="<?php echo esc_attr($this->options['api_key']); ?>" class="regular-text">
+                            <p class="description">
+                                <?php echo esc_html__('برای دریافت کلید API به سایت ipgeolocation.io مراجعه کنید.', 'smart-vpn-warning-for-woocommerce'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="smart_vpn_warning_message_fa"><?php echo esc_html__('پیام هشدار', 'smart-vpn-warning-for-woocommerce'); ?></label>
+                        </th>
+                        <td>
+                            <textarea id="smart_vpn_warning_message_fa" name="smart_vpn_warning_options[warning_message_fa]" rows="3" class="large-text"><?php echo esc_textarea($this->options['warning_message_fa']); ?></textarea>
+                            <p class="description">
+                                <?php echo esc_html__('متن هشدار را به زبان فارسی وارد کنید.', 'smart-vpn-warning-for-woocommerce'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php echo esc_html__('نمایش هشدار', 'smart-vpn-warning-for-woocommerce'); ?>
+                        </th>
+                        <td>
+                            <fieldset>
+                                <label>
+                                    <input type="radio" name="smart_vpn_warning_options[show_to_all]" value="no" <?php checked($this->options['show_to_all'], 'no'); ?>>
+                                    <?php echo esc_html__('فقط به کاربران خارج از ایران', 'smart-vpn-warning-for-woocommerce'); ?>
+                                </label>
+                                <br>
+                                <label>
+                                    <input type="radio" name="smart_vpn_warning_options[show_to_all]" value="yes" <?php checked($this->options['show_to_all'], 'yes'); ?>>
+                                    <?php echo esc_html__('به همه کاربران', 'smart-vpn-warning-for-woocommerce'); ?>
+                                </label>
+                            </fieldset>
+                            <p class="description">
+                                <?php echo esc_html__('انتخاب کنید که هشدار به چه کاربرانی نمایش داده شود.', 'smart-vpn-warning-for-woocommerce'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                <?php submit_button(esc_html__('ذخیره تنظیمات', 'smart-vpn-warning-for-woocommerce')); ?>
             </form>
         </div>
         <?php
