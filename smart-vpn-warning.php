@@ -1,17 +1,28 @@
 <?php
 /**
  * Plugin Name: Smart VPN Warning for WooCommerce
- * Description: Display a smart warning to users to turn off their VPN during checkout in WooCommerce
- * Version: 1.0.2
- * Author: Your Name
+ * Description: Display a smart warning to users to turn off their VPN during checkout in WooCommerce. Uses ipgeolocation.io API to detect user's country.
+ * Version: 1.1
+ * Author: ahmadesmaeeli
  * Author URI: https://ahmadesmaeeli.ir
  * Text Domain: smart-vpn-warning-for-woocommerce
  * Domain Path: /languages
  * Requires at least: 5.0
  * Requires PHP: 7.2
  * WC requires at least: 3.0
+ * Requires Plugins: woocommerce
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * 
+ * @package Smart_VPN_Warning
+ * 
+ * This plugin uses the ipgeolocation.io API to detect user's country.
+ * You need to get an API key from https://ipgeolocation.io/
+ * The free plan includes:
+ * - 1,000 requests per day
+ * - 30 requests per minute
+ * 
+ * The plugin implements rate limiting to stay within these limits.
  */
 
 // Prevent direct access
@@ -20,7 +31,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('SMART_VPN_WARNING_VERSION', '1.0.2');
+define('SMART_VPN_WARNING_VERSION', '1.1');
 define('SMART_VPN_WARNING_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SMART_VPN_WARNING_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -56,7 +67,6 @@ function smart_vpn_warning_activate() {
     // Default settings
     $default_options = array(
         'api_key' => '',
-        'warning_message' => 'Please turn off your VPN or proxy for successful payment.',
         'warning_message_fa' => 'لطفاً برای انجام موفق پرداخت، VPN یا فیلترشکن خود را خاموش کنید.',
         'show_to_all' => 'no',
     );

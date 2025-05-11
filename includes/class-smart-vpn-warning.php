@@ -29,9 +29,6 @@ class Smart_VPN_Warning {
         // Load options
         $this->options = get_option('smart_vpn_warning_options', array());
         
-        // Load translations
-        add_action('init', array($this, 'load_textdomain'));
-        
         // Add settings menu
         add_action('admin_menu', array($this, 'add_settings_page'));
         add_action('admin_init', array($this, 'register_settings'));
@@ -41,13 +38,6 @@ class Smart_VPN_Warning {
         
         // Display warning on checkout
         add_action('woocommerce_before_checkout_form', array($this, 'display_vpn_warning'));
-    }
-
-    /**
-     * Load plugin textdomain
-     */
-    public function load_textdomain() {
-        load_plugin_textdomain('smart-vpn-warning-for-woocommerce', false, dirname(plugin_basename(__FILE__)) . '/languages');
     }
 
     /**
@@ -75,32 +65,29 @@ class Smart_VPN_Warning {
             )
         );
         
+        // Add nonce field
+        add_action('admin_init', function() {
+            wp_nonce_field('smart_vpn_warning_nonce', 'smart_vpn_warning_nonce');
+        });
+        
         add_settings_section(
             'smart_vpn_warning_main_section',
-            __('Main Settings', 'smart-vpn-warning-for-woocommerce'),
+            __('تنظیمات هشدار VPN', 'smart-vpn-warning-for-woocommerce'),
             array($this, 'settings_section_callback'),
             'smart-vpn-warning'
         );
         
         add_settings_field(
             'api_key',
-            __('API Key', 'smart-vpn-warning-for-woocommerce'),
+            __('کلید API', 'smart-vpn-warning-for-woocommerce'),
             array($this, 'api_key_callback'),
             'smart-vpn-warning',
             'smart_vpn_warning_main_section'
         );
         
         add_settings_field(
-            'warning_message',
-            __('Warning Message (English)', 'smart-vpn-warning-for-woocommerce'),
-            array($this, 'warning_message_callback'),
-            'smart-vpn-warning',
-            'smart_vpn_warning_main_section'
-        );
-        
-        add_settings_field(
             'warning_message_fa',
-            __('Warning Message (Persian)', 'smart-vpn-warning-for-woocommerce'),
+            __('پیام هشدار', 'smart-vpn-warning-for-woocommerce'),
             array($this, 'warning_message_fa_callback'),
             'smart-vpn-warning',
             'smart_vpn_warning_main_section'
@@ -108,7 +95,7 @@ class Smart_VPN_Warning {
         
         add_settings_field(
             'show_to_all',
-            __('Show to All Users', 'smart-vpn-warning-for-woocommerce'),
+            __('نمایش به همه کاربران', 'smart-vpn-warning-for-woocommerce'),
             array($this, 'show_to_all_callback'),
             'smart-vpn-warning',
             'smart_vpn_warning_main_section'
@@ -129,15 +116,6 @@ class Smart_VPN_Warning {
         $api_key = isset($this->options['api_key']) ? $this->options['api_key'] : '';
         echo '<input type="text" id="api_key" name="smart_vpn_warning_options[api_key]" value="' . esc_attr($api_key) . '" class="regular-text" />';
         echo '<p class="description">' . wp_kses(__('Get your API key from <a href="https://ipgeolocation.io/" target="_blank">ipgeolocation.io</a>.', 'smart-vpn-warning-for-woocommerce'), array('a' => array('href' => array(), 'target' => array()))) . '</p>';
-    }
-
-    /**
-     * Warning message field (English)
-     */
-    public function warning_message_callback() {
-        $warning_message = isset($this->options['warning_message']) ? $this->options['warning_message'] : 'Please turn off your VPN or proxy for successful payment.';
-        echo '<textarea id="warning_message" name="smart_vpn_warning_options[warning_message]" rows="4" cols="50">' . esc_textarea($warning_message) . '</textarea>';
-        echo '<p class="description">' . esc_html__('This message will be displayed to users with non-Persian language settings.', 'smart-vpn-warning-for-woocommerce') . '</p>';
     }
 
     /**
@@ -199,7 +177,7 @@ class Smart_VPN_Warning {
             return;
         }
         
-        // Get appropriate warning message based on language
+        // Get appropriate warning message
         $warning_message = $this->get_appropriate_warning_message();
         
         if (!empty($warning_message)) {
@@ -211,20 +189,12 @@ class Smart_VPN_Warning {
     }
 
     /**
-     * Get appropriate warning message based on user's language
+     * Get appropriate warning message
      *
      * @return string
      */
     private function get_appropriate_warning_message() {
-        $locale = get_locale();
-        
-        // Use Persian message for Persian users
-        if (in_array($locale, array('fa_IR', 'fa_AF'))) {
-            return isset($this->options['warning_message_fa']) ? $this->options['warning_message_fa'] : 'لطفاً برای انجام موفق پرداخت، VPN یا فیلترشکن خود را خاموش کنید.';
-        }
-        
-        // Use English message for all other users
-        return isset($this->options['warning_message']) ? $this->options['warning_message'] : 'Please turn off your VPN or proxy for successful payment.';
+        return isset($this->options['warning_message_fa']) ? $this->options['warning_message_fa'] : 'لطفاً برای انجام موفق پرداخت، VPN یا فیلترشکن خود را خاموش کنید.';
     }
 
     /**
@@ -260,20 +230,40 @@ class Smart_VPN_Warning {
         // Get API key
         $api_key = isset($this->options['api_key']) ? $this->options['api_key'] : '';
         if (empty($api_key)) {
+            error_log('Smart VPN Warning: API key is not set');
             return false;
         }
         
         // Get user's IP
         $ip_address = $this->get_client_ip();
         if (!$ip_address) {
+            error_log('Smart VPN Warning: Could not get client IP');
+            return false;
+        }
+        
+        // Check rate limit
+        $rate_limit_key = 'smart_vpn_warning_rate_limit_' . md5($ip_address);
+        $rate_limit = get_transient($rate_limit_key);
+        if ($rate_limit !== false) {
+            error_log('Smart VPN Warning: Rate limit exceeded for IP ' . $ip_address);
             return false;
         }
         
         // Make API request
         $api_url = "https://api.ipgeolocation.io/ipgeo?apiKey={$api_key}&ip={$ip_address}";
-        $response = wp_remote_get($api_url);
+        $response = wp_remote_get($api_url, array(
+            'timeout' => 5,
+            'sslverify' => true
+        ));
         
         if (is_wp_error($response)) {
+            error_log('Smart VPN Warning: API request failed - ' . $response->get_error_message());
+            return false;
+        }
+        
+        $response_code = wp_remote_retrieve_response_code($response);
+        if ($response_code !== 200) {
+            error_log('Smart VPN Warning: API returned error code ' . $response_code);
             return false;
         }
         
@@ -283,9 +273,12 @@ class Smart_VPN_Warning {
         if (isset($data['country_code2'])) {
             // Cache for one hour
             set_transient('smart_vpn_warning_country_code', $data['country_code2'], HOUR_IN_SECONDS);
+            // Set rate limit for 1 minute
+            set_transient($rate_limit_key, true, 60);
             return $data['country_code2'];
         }
         
+        error_log('Smart VPN Warning: Could not get country code from API response');
         return false;
     }
 
@@ -331,11 +324,7 @@ class Smart_VPN_Warning {
             $sanitized_input['api_key'] = sanitize_text_field($input['api_key']);
         }
         
-        // Sanitize warning messages
-        if (isset($input['warning_message'])) {
-            $sanitized_input['warning_message'] = sanitize_textarea_field($input['warning_message']);
-        }
-        
+        // Sanitize warning message
         if (isset($input['warning_message_fa'])) {
             $sanitized_input['warning_message_fa'] = sanitize_textarea_field($input['warning_message_fa']);
         }
