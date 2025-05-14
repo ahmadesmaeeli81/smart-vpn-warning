@@ -38,6 +38,9 @@ class Smart_VPN_Warning {
         
         // Display warning on checkout
         add_action('woocommerce_before_checkout_form', array($this, 'display_vpn_warning'));
+        
+        // Display popup warning
+        add_action('wp_footer', array($this, 'display_vpn_warning_popup'));
     }
 
     /**
@@ -82,19 +85,9 @@ class Smart_VPN_Warning {
                 <?php
                 settings_fields('smart_vpn_warning_options');
                 do_settings_sections('smart_vpn_warning_options');
+                wp_nonce_field('smart_vpn_warning_settings', 'smart_vpn_warning_nonce');
                 ?>
                 <table class="form-table">
-                    <tr>
-                        <th scope="row">
-                            <label for="smart_vpn_warning_api_key"><?php echo esc_html__('کلید API', 'smart-vpn-warning-for-woocommerce'); ?></label>
-                        </th>
-                        <td>
-                            <input type="text" id="smart_vpn_warning_api_key" name="smart_vpn_warning_options[api_key]" value="<?php echo esc_attr($this->options['api_key']); ?>" class="regular-text">
-                            <p class="description">
-                                <?php echo esc_html__('برای دریافت کلید API به سایت ipgeolocation.io مراجعه کنید.', 'smart-vpn-warning-for-woocommerce'); ?>
-                            </p>
-                        </td>
-                    </tr>
                     <tr>
                         <th scope="row">
                             <label for="smart_vpn_warning_message_fa"><?php echo esc_html__('پیام هشدار', 'smart-vpn-warning-for-woocommerce'); ?></label>
@@ -127,6 +120,32 @@ class Smart_VPN_Warning {
                             </p>
                         </td>
                     </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php echo esc_html__('نوع نمایش هشدار', 'smart-vpn-warning-for-woocommerce'); ?>
+                        </th>
+                        <td>
+                            <fieldset>
+                                <label>
+                                    <input type="radio" name="smart_vpn_warning_options[warning_type]" value="box" <?php checked(isset($this->options['warning_type']) ? $this->options['warning_type'] : 'box', 'box'); ?>>
+                                    <?php echo esc_html__('باکس ثابت در صفحه پرداخت', 'smart-vpn-warning-for-woocommerce'); ?>
+                                </label>
+                                <br>
+                                <label>
+                                    <input type="radio" name="smart_vpn_warning_options[warning_type]" value="popup" <?php checked(isset($this->options['warning_type']) ? $this->options['warning_type'] : 'box', 'popup'); ?>>
+                                    <?php echo esc_html__('پاپ‌آپ بعد از کلیک روی دکمه ثبت سفارش', 'smart-vpn-warning-for-woocommerce'); ?>
+                                </label>
+                            </fieldset>
+                            <p class="description">
+                                <?php echo esc_html__('انتخاب کنید که هشدار به چه صورتی نمایش داده شود.', 'smart-vpn-warning-for-woocommerce'); ?>
+                            </p>
+                            <p class="description" style="color: #d63638;">
+                                <?php echo esc_html__('توجه: این افزونه در حال توسعه است و تلاش می‌کنیم شناسایی وضعیت VPN را به‌صورت دقیق در هر دو حالت انجام دهیم.
+در حال حاضر، حالت پاپ‌آپ هنگام کلیک روی دکمه «ثبت سفارش» فعال می‌شود و برای کاربران خارج از ایران دقت بالاتری دارد.
+حالت نمایش ثابت بدون بررسی موقعیت کاربر اجرا می‌شود و ممکن است برای همه کاربران نمایش داده شود.', 'smart-vpn-warning-for-woocommerce'); ?>
+                            </p>
+                        </td>
+                    </tr>
                 </table>
                 <?php submit_button(esc_html__('ذخیره تنظیمات', 'smart-vpn-warning-for-woocommerce')); ?>
             </form>
@@ -140,6 +159,19 @@ class Smart_VPN_Warning {
     public function enqueue_styles() {
         if (is_checkout()) {
             wp_enqueue_style('smart-vpn-warning-style', SMART_VPN_WARNING_PLUGIN_URL . 'assets/css/style.css', array(), SMART_VPN_WARNING_VERSION);
+            wp_enqueue_style('smart-vpn-warning-modal', SMART_VPN_WARNING_PLUGIN_URL . 'assets/css/modal.css', array(), SMART_VPN_WARNING_VERSION);
+            
+            // Enqueue script only for popup functionality
+            if (isset($this->options['warning_type']) && $this->options['warning_type'] === 'popup') {
+                wp_enqueue_script('smart-vpn-warning-popup', SMART_VPN_WARNING_PLUGIN_URL . 'assets/js/popup.js', array('jquery'), SMART_VPN_WARNING_VERSION, true);
+                
+                // Pass data to script
+                wp_localize_script('smart-vpn-warning-popup', 'smartVpnWarningData', array(
+                    'checking_text' => __('در حال بررسی...', 'smart-vpn-warning-for-woocommerce'),
+                    'order_button_text' => __('ثبت سفارش', 'smart-vpn-warning-for-woocommerce'),
+                    'show_to_all' => isset($this->options['show_to_all']) ? $this->options['show_to_all'] : 'no'
+                ));
+            }
         }
     }
 
@@ -150,6 +182,12 @@ class Smart_VPN_Warning {
         // Check if we're on checkout page
         if (!is_checkout()) {
             return;
+        }
+        
+        // Check warning type
+        $warning_type = isset($this->options['warning_type']) ? $this->options['warning_type'] : 'box';
+        if ($warning_type === 'popup') {
+            return; // Don't show box if popup is selected
         }
         
         // Check if we should display the warning
@@ -166,6 +204,46 @@ class Smart_VPN_Warning {
             echo '<div class="smart-vpn-warning-message">' . esc_html($warning_message) . '</div>';
             echo '</div>';
         }
+    }
+
+    /**
+     * Display VPN warning popup
+     */
+    public function display_vpn_warning_popup() {
+        // Check if we're on checkout page
+        if (!is_checkout()) {
+            return;
+        }
+        
+        // Check warning type
+        $warning_type = isset($this->options['warning_type']) ? $this->options['warning_type'] : 'box';
+        if ($warning_type !== 'popup') {
+            return; // Only show popup if popup is selected
+        }
+        
+        // Get appropriate warning message
+        $warning_message = $this->get_appropriate_warning_message();
+        
+        // Display popup HTML structure
+        ?>
+        <div id="smart-vpn-warning-modal" class="smart-vpn-modal" style="display: none;">
+            <div class="smart-vpn-modal-content">
+                <h4><?php echo esc_html__('هشدار', 'smart-vpn-warning-for-woocommerce'); ?></h4>
+                <p><?php echo esc_html($warning_message); ?></p>
+                <div class="smart-vpn-modal-buttons">
+                    <button id="smart-vpn-close" class="button"><?php echo esc_html__('باشه', 'smart-vpn-warning-for-woocommerce'); ?></button>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            $('#smart-vpn-close').on('click', function(e) {
+                e.preventDefault();
+                $('#smart-vpn-warning-modal').fadeOut(300);
+            });
+        });
+        </script>
+        <?php
     }
 
     /**
@@ -188,52 +266,39 @@ class Smart_VPN_Warning {
             return true;
         }
         
-        // Check user's country
-        $country_code = $this->get_user_country();
+        // For box display, we'll assume we should show it
+        // For popup, we'll check the country in JavaScript
+        $warning_type = isset($this->options['warning_type']) ? $this->options['warning_type'] : 'box';
+        if ($warning_type === 'popup') {
+            return true;
+        }
         
-        // If user's country is not Iran, show the warning
-        return ($country_code && $country_code !== 'IR');
+        // For box display with country check
+        return $this->is_user_outside_iran();
     }
 
     /**
-     * Get user's country code
+     * Check if user is outside Iran
      *
-     * @return string|false
+     * @return bool
      */
-    private function get_user_country() {
-        // Check cache
-        $country_code = get_transient('smart_vpn_warning_country_code');
-        if ($country_code !== false) {
-            return $country_code;
-        }
-        
-        // Get API key
-        $api_key = isset($this->options['api_key']) ? $this->options['api_key'] : '';
-        if (empty($api_key)) {
-            error_log('Smart VPN Warning: API key is not set');
-            return false;
-        }
-        
+    private function is_user_outside_iran() {
         // Get user's IP
         $ip_address = $this->get_client_ip();
         if (!$ip_address) {
-            error_log('Smart VPN Warning: Could not get client IP');
             return false;
         }
         
-        // Check rate limit
-        $rate_limit_key = 'smart_vpn_warning_rate_limit_' . md5($ip_address);
-        $rate_limit = get_transient($rate_limit_key);
-        if ($rate_limit !== false) {
-            error_log('Smart VPN Warning: Rate limit exceeded for IP ' . $ip_address);
-            return false;
-        }
-        
-        // Make API request
-        $api_url = "https://api.ipgeolocation.io/ipgeo?apiKey={$api_key}&ip={$ip_address}";
+        // Make API request to ipapi.co with cache busting parameter
+        $api_url = "https://ipapi.co/{$ip_address}/json/?nocache=" . time();
         $response = wp_remote_get($api_url, array(
             'timeout' => 5,
-            'sslverify' => true
+            'sslverify' => true,
+            'headers' => array(
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            )
         ));
         
         if (is_wp_error($response)) {
@@ -250,15 +315,10 @@ class Smart_VPN_Warning {
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
         
-        if (isset($data['country_code2'])) {
-            // Cache for one hour
-            set_transient('smart_vpn_warning_country_code', $data['country_code2'], HOUR_IN_SECONDS);
-            // Set rate limit for 1 minute
-            set_transient($rate_limit_key, true, 60);
-            return $data['country_code2'];
+        if (isset($data['country_code'])) {
+            return ($data['country_code'] !== 'IR');
         }
         
-        error_log('Smart VPN Warning: Could not get country code from API response');
         return false;
     }
 
@@ -297,20 +357,24 @@ class Smart_VPN_Warning {
      * @return array Sanitized options array.
      */
     public function sanitize_options($input) {
-        $sanitized_input = array();
-        
-        // Sanitize API key
-        if (isset($input['api_key'])) {
-            $sanitized_input['api_key'] = sanitize_text_field($input['api_key']);
+        // Verify nonce
+        if (!isset($_POST['smart_vpn_warning_nonce']) || !wp_verify_nonce($_POST['smart_vpn_warning_nonce'], 'smart_vpn_warning_settings')) {
+            add_settings_error('smart_vpn_warning_options', 'nonce_error', esc_html__('خطای امنیتی رخ داده است. لطفا دوباره تلاش کنید.', 'smart-vpn-warning-for-woocommerce'), 'error');
+            return get_option('smart_vpn_warning_options', array());
         }
+        
+        $sanitized_input = array();
         
         // Sanitize warning message
         if (isset($input['warning_message_fa'])) {
             $sanitized_input['warning_message_fa'] = sanitize_textarea_field($input['warning_message_fa']);
         }
         
-        // Sanitize checkbox
-        $sanitized_input['show_to_all'] = isset($input['show_to_all']) ? 'yes' : 'no';
+        // Sanitize show to all
+        $sanitized_input['show_to_all'] = isset($input['show_to_all']) ? sanitize_text_field($input['show_to_all']) : 'no';
+        
+        // Sanitize warning type
+        $sanitized_input['warning_type'] = isset($input['warning_type']) && in_array($input['warning_type'], array('box', 'popup')) ? $input['warning_type'] : 'box';
         
         return $sanitized_input;
     }

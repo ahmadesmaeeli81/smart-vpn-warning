@@ -1,10 +1,11 @@
 <?php
 /**
  * Plugin Name: Smart VPN Warning for WooCommerce
- * Description: Display a smart warning to users to turn off their VPN during checkout in WooCommerce. Uses ipgeolocation.io API to detect user's country.
- * Version: 1.1
+ * Description: Display a smart warning to users to turn off their VPN during checkout in WooCommerce. Uses ipify.org and ipapi.co APIs to detect user's country.
+ * Version: 1.2
  * Author: ahmadesmaeeli
  * Author URI: https://ahmadesmaeeli.ir
+ * Author Email: info@ahmadesmaeeli.ir
  * Text Domain: smart-vpn-warning-for-woocommerce
  * Domain Path: /languages
  * Requires at least: 5.0
@@ -16,13 +17,8 @@
  * 
  * @package Smart_VPN_Warning
  * 
- * This plugin uses the ipgeolocation.io API to detect user's country.
- * You need to get an API key from https://ipgeolocation.io/
- * The free plan includes:
- * - 1,000 requests per day
- * - 30 requests per minute
- * 
- * The plugin implements rate limiting to stay within these limits.
+ * This plugin uses free API services (ipify.org and ipapi.co) to detect user's country.
+ * No API key required!
  */
 
 // Prevent direct access
@@ -31,7 +27,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('SMART_VPN_WARNING_VERSION', '1.1');
+define('SMART_VPN_WARNING_VERSION', '1.2');
 define('SMART_VPN_WARNING_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SMART_VPN_WARNING_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -66,9 +62,9 @@ register_activation_hook(__FILE__, 'smart_vpn_warning_activate');
 function smart_vpn_warning_activate() {
     // Default settings
     $default_options = array(
-        'api_key' => '',
         'warning_message_fa' => 'لطفاً برای انجام موفق پرداخت، VPN یا فیلترشکن خود را خاموش کنید.',
         'show_to_all' => 'no',
+        'warning_type' => 'box',
     );
     
     // Save default settings if they don't exist

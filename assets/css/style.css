@@ -26,6 +26,24 @@
     line-height: 1.5;
 }
 
+.smart-vpn-warning-actions {
+    margin-left: 10px;
+}
+
+#smart-vpn-recheck {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    color: #333;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+#smart-vpn-recheck:hover {
+    background-color: #e9ecef;
+}
+
 /* RTL Support */
 html[dir="rtl"] .smart-vpn-warning {
     flex-direction: row-reverse;
@@ -34,6 +52,11 @@ html[dir="rtl"] .smart-vpn-warning {
 html[dir="rtl"] .smart-vpn-warning-icon {
     margin-right: 0;
     margin-left: 10px;
+}
+
+html[dir="rtl"] .smart-vpn-warning-actions {
+    margin-left: 0;
+    margin-right: 10px;
 }
 
 /* Responsive */

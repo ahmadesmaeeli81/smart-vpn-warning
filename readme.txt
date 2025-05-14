@@ -3,7 +3,7 @@ Contributors: ahmadesmaeeli
 Tags: woocommerce, vpn, warning, checkout, persian, rtl
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.1
+Stable tag: 1.2
 Requires PHP: 7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -12,29 +12,24 @@ Display a smart warning to users to turn off their VPN during checkout in WooCom
 
 == Description ==
 
-This plugin displays a simple and elegant warning (no popup) on the WooCommerce checkout page, advising users to turn off their VPN for successful payment processing.
+This plugin displays a simple and elegant warning on the WooCommerce checkout page, advising users to turn off their VPN for successful payment processing.
+
+For support or feature requests, please contact us at info@ahmadesmaeeli.ir
 
 = Features =
 
-* Display a simple and elegant warning (no popup) on the checkout page
-* Smart country detection using IP Geolocation API
+* Display a simple and elegant warning on the checkout page
+* Smart country detection using ipapi.co API (no API key required)
 * Admin settings panel in WordPress dashboard
 * Customizable warning message in Persian
 * Option to show warning to all users or only to users outside Iran
-* Caching system to reduce API requests and improve speed
-* Rate limiting to stay within API limits
+* Option to choose between static box or popup warning
 * Responsive design and mobile-friendly
 * RTL support for Persian websites
 
-= API Usage =
+= How It Works =
 
-This plugin uses the ipgeolocation.io API to detect user's country. You need to get an API key from https://ipgeolocation.io/
-
-The free plan includes:
-* 1,000 requests per day
-* 30 requests per minute
-
-The plugin implements rate limiting to stay within these limits.
+This plugin uses free API services (ipify.org and ipapi.co) to detect user's country. No API key is required.
 
 == Installation ==
 
@@ -57,7 +52,7 @@ Yes, this plugin is fully compatible with RTL and Persian themes.
 
 = Will this plugin slow down my website? =
 
-No, this plugin uses a caching system and rate limiting to stay within API limits.
+No, this plugin uses free and fast API services to detect user's country.
 
 = Can I display the warning only on the checkout page? =
 
@@ -71,9 +66,18 @@ Yes, by default, this plugin only displays the warning on the WooCommerce checko
 
 == Changelog ==
 
+= 1.2 =
+* Added popup warning option when clicking on checkout button
+* Separated CSS and JavaScript code into external files for better performance
+* Removed dependency on external API keys for better reliability
+* Added author email contact information
+* Code optimization and cleanup
+* Improved overall performance and loading speed
+
 = 1.1 =
 * Improved security with nonce for settings forms
-* Added rate limiting for API requests (1 request per minute per IP)
+* Changed to free API services (ipify.org and ipapi.co) - no API key required
+* Added option to choose between static box or popup warning
 * Enhanced error handling and logging
 * Removed English warning message (Persian only)
 * Updated documentation
@@ -83,23 +87,25 @@ Yes, by default, this plugin only displays the warning on the WooCommerce checko
 
 == Upgrade Notice ==
 
+= 1.2 =
+This version adds popup warning option when clicking on checkout button, improves code organization with separate CSS and JS files, removes dependency on external API keys, and includes various performance optimizations.
+
 = 1.1 =
-This version includes security improvements, rate limiting, and better error handling. The English warning message has been removed to focus on Persian users.
+This version includes security improvements, free API services (no key required), and the option to choose between static box or popup warning.
 
 == Configuration ==
 
 1. After activating the plugin, go to `Settings > VPN Warning`
-2. Get an API key from ipgeolocation.io
-3. Enter your API key in the appropriate field
-4. Customize the warning message if needed
-5. If you want to show the warning to all users (without checking their country), enable the corresponding option
-6. Save your settings
+2. Customize the warning message if needed
+3. Choose how to display the warning (static box or popup)
+4. If you want to show the warning to all users (without checking their country), enable the corresponding option
+5. Save your settings
 
 == Requirements ==
 
 * WordPress 5.0 or higher
 * WooCommerce 3.0 or higher
-* A free API key from ipgeolocation.io
+* PHP 7.2 or higher
 
 == Persian Description ==
 
@@ -109,19 +115,23 @@ This version includes security improvements, rate limiting, and better error han
 
 این افزونه به‌ویژه برای فروشگاه‌های آنلاین ایرانی مفید است که در آن‌ها پرداخت‌های بین‌المللی ممکن است به دلیل تحریم‌ها هنگامی که کاربران از VPN استفاده می‌کنند، مسدود شود.
 
+برای پشتیبانی یا درخواست ویژگی‌های جدید، لطفاً با ما از طریق ایمیل info@ahmadesmaeeli.ir تماس بگیرید.
+
+= تغییرات نسخه 1.2 =
+* اضافه کردن گزینه هشدار پاپ‌آپ هنگام کلیک روی دکمه ثبت سفارش
+* جداسازی کدهای CSS و JavaScript به فایل‌های خارجی برای عملکرد بهتر
+* حذف وابستگی به کلیدهای API خارجی برای اطمینان بیشتر
+* اضافه کردن اطلاعات تماس ایمیل نویسنده
+* بهینه‌سازی و پاکسازی کد
+* بهبود عملکرد کلی و سرعت بارگذاری
+
 = ویژگی‌ها =
 
-* نمایش هشدار شیک و ساده (بدون پاپ‌آپ) در صفحه پرداخت
-* تشخیص هوشمند کشور کاربر با استفاده از API
+* نمایش هشدار شیک و ساده در صفحه پرداخت
+* تشخیص هوشمند کشور کاربر با استفاده از API سرویس ipapi.co (بدون نیاز به کلید API)
 * پنل تنظیمات در مدیریت وردپرس
-* امکان تنظیم متن هشدار دلخواه (پشتیبانی از زبان‌های فارسی و انگلیسی)
+* امکان تنظیم متن هشدار دلخواه به زبان فارسی
 * گزینه نمایش هشدار به همه کاربران یا فقط کاربران خارج از ایران
-* سیستم کش برای کاهش تعداد درخواست‌ها به API و افزایش سرعت
+* امکان انتخاب بین هشدار ثابت یا پاپ‌آپ
 * طراحی واکنش‌گرا و سازگار با موبایل
 * پشتیبانی از طرح راست به چپ (RTL)
-
-= پیش‌نیازها =
-
-* وردپرس 5.0 یا بالاتر
-* ووکامرس 3.0 یا بالاتر
-* یک کلید API رایگان از [ipgeolocation.io](https://ipgeolocation.io/)
